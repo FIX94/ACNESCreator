@@ -106,7 +106,7 @@ namespace ACNESCreator.Core
         public readonly byte[] SaveIconData;
         public readonly bool IsROM;
 
-        public NES(string ROMName, byte[] ROMData, Region ACRegion, bool Compress, bool IsGameDnMe, byte[] IconData = null)
+        public NES(string ROMName, byte[] ROMData, Region ACRegion, bool Compress, bool IsGameDnMe, byte[] IconData = null, byte[] PatcherData = null, uint PatchAddress = 0)
         {
             // Set the icon
             SaveIconData = IconData ?? GCI.DefaultIconData;
@@ -165,11 +165,11 @@ namespace ACNESCreator.Core
             GameRegion = ACRegion;
 
             // Generate custom tag data if possible
-            GenerateDefaultTagData(ROMName, IsROM);
+            GenerateDefaultTagData(ROMName, PatcherData, PatchAddress);
         }
 
-        public NES(string ROMName, byte[] ROMData, bool CanSave, Region ACRegion, bool Compress, bool IsDnMe, byte[] IconData = null)
-            : this(ROMName, ROMData, ACRegion, Compress, IsDnMe, IconData)
+        public NES(string ROMName, byte[] ROMData, bool CanSave, Region ACRegion, bool Compress, bool IsDnMe, byte[] IconData = null, byte[] PatcherData = null, uint PatchAddress = 0)
+            : this(ROMName, ROMData, ACRegion, Compress, IsDnMe, IconData, PatcherData, PatchAddress)
         {
             if (!CanSave)
             {
@@ -193,7 +193,7 @@ namespace ACNESCreator.Core
             Data[0x680] = (byte)-Checksum;
         }
 
-        internal void GenerateDefaultTagData(string GameName, bool NESImage)
+        internal void GenerateDefaultTagData(string GameName, byte[] PatcherData, uint PatchRegionAddress)
         {
             if (GameName.Length > 1)
             {
@@ -205,13 +205,15 @@ namespace ACNESCreator.Core
                     new KeyValuePair<string, byte[]>("GNO", new byte[1] { 0x1F }),
                 };
 
-                // Patch ROM if not NES Image
-                if (!NESImage)
+                // Patch with given patcher data
+                if (PatcherData != null && PatchRegionAddress != 0)
                 {
-                    AddPatchData(ref Tags, 0x80003970, Patch.PatcherData);
-                    AddPatchData(ref Tags, 0x806D4B9C, Patch.PatcherEntryPointData);
+                    //This patch will write our code into the desired low memory address
+                    AddPatchData(ref Tags, Patch.PatcherEntryPoint, PatcherData);
+                    //This patch will replace the desired function pointer with a pointer to our code
+                    AddPatchData(ref Tags, PatchRegionAddress, Patch.PatcherEntryPointData);
                 }
-                
+
                 Tags.Add(new KeyValuePair<string, byte[]>("END", new byte[0]));
 
                 GenerateTagData(Tags);

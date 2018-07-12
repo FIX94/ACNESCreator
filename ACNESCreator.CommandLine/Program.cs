@@ -22,16 +22,31 @@ namespace ACNESCreator.CommandLine
             }
             if (args.Length < 3)
             {
-                Console.WriteLine("Enter your Animal Crossing game's region (J for Japan, E for North America, P for Europe, and U for Austrailia:");
+                Console.WriteLine("Enter your Animal Crossing game's region (J for Japan, E for North America, P for Europe, and U for Austrailia):");
                 args = new string[3] { args[0], args[1], Console.ReadLine() };
             }
-
-            if (args[0].Length >= 4 && File.Exists(args[1]))
+            if (args.Length < 4)
+            {
+                Console.WriteLine("Is this Doubutsu no Mori e+? (1 for yes, 0 for no):");
+                args = new string[4] { args[0], args[1], args[2], Console.ReadLine() };
+            }
+            if (args.Length < 5)
+            {
+                Console.WriteLine("Enter the path to the Patch File to inject: ");
+                args = new string[5] { args[0], args[1], args[2], args[3], Console.ReadLine().Replace("\"", "") };
+            }
+            if (args.Length < 6)
+            {
+                Console.WriteLine("Enter the address of the Function Pointer to patch:");
+                args = new string[6] { args[0], args[1], args[2], args[3], args[4], Console.ReadLine() };
+            }
+            if (args[0].Length >= 4 && File.Exists(args[1]) && File.Exists(args[4]))
             {
                 int RegionIdx = Array.IndexOf(RegionCodes, args[2].ToUpper());
                 if (RegionIdx > -1)
                 {
-                    NES NESFile = new NES(args[0], File.ReadAllBytes(args[1]), false, (Region)RegionIdx, false, false);
+                    NES NESFile = new NES(args[0], File.ReadAllBytes(args[1]), false, (Region)RegionIdx, true, 
+                        args[3].Equals("1"), null, File.ReadAllBytes(args[4]), Convert.ToUInt32(args[5], 16));
 
                     string OutputFile = Path.GetDirectoryName(args[1]) + "\\" + args[0] + "_" + args[2].ToUpper() + "_InjectedData.gci";
                     using (var Stream = new FileStream(OutputFile, FileMode.OpenOrCreate))
@@ -42,7 +57,7 @@ namespace ACNESCreator.CommandLine
                     }
 
                     Console.WriteLine("Successfully generated a GCI file with the NES rom in it!\nFile Location: " + OutputFile);
-                    Console.ReadLine();
+                    //Console.ReadLine();
                 }
                 else
                 {
